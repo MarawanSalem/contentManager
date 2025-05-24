@@ -3,13 +3,56 @@
 namespace App\Repositories;
 
 use App\Models\Post;
+use App\Repositories\Interfaces\PostRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 
-class PostRepository extends BaseRepository
+class PostRepository implements PostRepositoryInterface
 {
+    protected $model;
+
     public function __construct(Post $model)
     {
-        parent::__construct($model);
+        $this->model = $model;
+    }
+
+    public function all(array $filters = []): LengthAwarePaginator
+    {
+        $query = $this->model->query();
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (isset($filters['date_from'])) {
+            $query->where('scheduled_time', '>=', $filters['date_from']);
+        }
+
+        if (isset($filters['date_to'])) {
+            $query->where('scheduled_time', '<=', $filters['date_to']);
+        }
+
+        return $query->with(['user', 'platforms'])->paginate(10);
+    }
+
+    public function find(int $id): ?Post
+    {
+        return $this->model->with(['user', 'platforms'])->find($id);
+    }
+
+    public function create(array $data): Post
+    {
+        return $this->model->create($data);
+    }
+
+    public function update(int $id, array $data): bool
+    {
+        return $this->model->where('id', $id)->update($data);
+    }
+
+    public function delete(int $id): bool
+    {
+        return $this->model->destroy($id);
     }
 
     public function getScheduledPosts(): Collection
@@ -17,10 +60,11 @@ class PostRepository extends BaseRepository
         return $this->model
             ->where('status', 'scheduled')
             ->where('scheduled_time', '<=', now())
+            ->with(['user', 'platforms'])
             ->get();
     }
 
-    public function getUserPosts(int $userId, array $filters = []): Collection
+    public function getPostsByUser(int $userId, array $filters = []): LengthAwarePaginator
     {
         $query = $this->model->where('user_id', $userId);
 
@@ -36,15 +80,18 @@ class PostRepository extends BaseRepository
             $query->where('scheduled_time', '<=', $filters['date_to']);
         }
 
-        return $query->get();
+        return $query->with(['platforms'])->paginate(10);
     }
 
-    public function getDailyScheduledCount(int $userId): int
+    public function attachPlatforms(int $postId, array $platformIds): void
     {
-        return $this->model
-            ->where('user_id', $userId)
-            ->where('status', 'scheduled')
-            ->whereDate('scheduled_time', today())
-            ->count();
+        $post = $this->find($postId);
+        $post->platforms()->attach($platformIds);
+    }
+
+    public function detachPlatforms(int $postId, array $platformIds): void
+    {
+        $post = $this->find($postId);
+        $post->platforms()->detach($platformIds);
     }
 }
