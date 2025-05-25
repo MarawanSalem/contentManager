@@ -16,68 +16,69 @@ class PlatformRepository implements PlatformRepositoryInterface
         $this->model = $model;
     }
 
-    public function all(): Collection
+    public function all(array $filters = []): LengthAwarePaginator
     {
-        return $this->model->all();
+        $query = $this->model->query();
+
+        if (isset($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+
+        if (isset($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->paginate($filters['per_page'] ?? 15);
     }
 
-    public function find(int $id): ?Platform
+    public function getActive(): Collection
+    {
+        return $this->model->where('status', 'active')->get();
+    }
+
+    public function find(int $id)
     {
         return $this->model->find($id);
     }
 
-    public function create(array $data): Platform
+    public function create(array $data)
     {
         return $this->model->create($data);
     }
 
     public function update(int $id, array $data): bool
     {
-        return $this->model->where('id', $id)->update($data);
+        $platform = $this->find($id);
+        if (!$platform) {
+            return false;
+        }
+        return $platform->update($data);
     }
 
     public function delete(int $id): bool
     {
-        return $this->model->destroy($id);
-    }
-
-    public function getActivePlatformsForUser(int $userId): Collection
-    {
-        return $this->model
-            ->whereHas('users', function ($query) use ($userId) {
-                $query->where('users.id', $userId);
-            })
-            ->get();
-    }
-
-    public function togglePlatformForUser(int $userId, int $platformId, bool $active): void
-    {
-        $platform = $this->find($platformId);
-
-        if ($active) {
-            $platform->users()->attach($userId);
-        } else {
-            $platform->users()->detach($userId);
+        $platform = $this->find($id);
+        if (!$platform) {
+            return false;
         }
+        return $platform->delete();
     }
 
-    public function getActivePlatforms(): Collection
-    {
-        return $this->model->where('is_active', true)->get();
-    }
-
-    public function togglePlatformStatus(int $id): bool
+    public function toggleStatus(int $id): bool
     {
         $platform = $this->find($id);
-        if ($platform) {
-            $platform->is_active = !$platform->is_active;
-            return $platform->save();
+        if (!$platform) {
+            return false;
         }
-        return false;
+        return $platform->update([
+            'status' => $platform->status === 'active' ? 'inactive' : 'active'
+        ]);
     }
 
-    public function getPlatformsByType(string $type): Collection
+    public function getByUser(int $userId): Collection
     {
-        return $this->model->where('type', $type)->get();
+        return $this->model->whereHas('users', function ($query) use ($userId) {
+            $query->where('users.id', $userId);
+        })->get();
     }
 }

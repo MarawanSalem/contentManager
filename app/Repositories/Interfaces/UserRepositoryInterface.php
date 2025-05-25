@@ -5,10 +5,10 @@ namespace App\Repositories\Interfaces;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-interface PlatformRepositoryInterface
+interface UserRepositoryInterface
 {
     /**
-     * Get all platforms
+     * Get all users
      *
      * @param array $filters
      * @return LengthAwarePaginator
@@ -16,14 +16,7 @@ interface PlatformRepositoryInterface
     public function all(array $filters = []): LengthAwarePaginator;
 
     /**
-     * Get active platforms
-     *
-     * @return Collection
-     */
-    public function getActive(): Collection;
-
-    /**
-     * Find platform by ID
+     * Find user by ID
      *
      * @param int $id
      * @return mixed
@@ -31,7 +24,15 @@ interface PlatformRepositoryInterface
     public function find(int $id);
 
     /**
-     * Create new platform
+     * Find user by email
+     *
+     * @param string $email
+     * @return mixed
+     */
+    public function findByEmail(string $email);
+
+    /**
+     * Create new user
      *
      * @param array $data
      * @return mixed
@@ -39,7 +40,7 @@ interface PlatformRepositoryInterface
     public function create(array $data);
 
     /**
-     * Update platform
+     * Update user
      *
      * @param int $id
      * @param array $data
@@ -48,7 +49,7 @@ interface PlatformRepositoryInterface
     public function update(int $id, array $data): bool;
 
     /**
-     * Delete platform
+     * Delete user
      *
      * @param int $id
      * @return bool
@@ -56,18 +57,27 @@ interface PlatformRepositoryInterface
     public function delete(int $id): bool;
 
     /**
-     * Toggle platform status
+     * Get user's posts
      *
-     * @param int $id
-     * @return bool
+     * @param int $userId
+     * @param array $filters
+     * @return Collection
      */
-    public function toggleStatus(int $id): bool;
+    public function getPosts(int $userId, array $filters = []): Collection;
 
     /**
-     * Get platforms by user
+     * Get user's platforms
      *
      * @param int $userId
      * @return Collection
      */
-    public function getByUser(int $userId): Collection;
+    public function getPlatforms(int $userId): Collection;
+
+    /**
+     * Get user's daily post count
+     *
+     * @param int $userId
+     * @return int
+     */
+    public function getDailyPostCount(int $userId): int;
 }

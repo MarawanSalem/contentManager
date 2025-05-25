@@ -18,6 +18,7 @@ class PlatformResource extends Resource
     protected static ?string $model = Platform::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-globe-alt';
+    protected static ?string $navigationGroup = 'Settings';
 
     public static function form(Form $form): Form
     {
@@ -26,17 +27,45 @@ class PlatformResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255),
+                Forms\Components\Select::make('type')
+                    ->options([
+                        'twitter' => 'Twitter',
+                        'instagram' => 'Instagram',
+                        'linkedin' => 'LinkedIn',
+                    ])
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function ($state, Forms\Set $set) {
+                        // Set platform-specific validation rules
+                        switch ($state) {
+                            case 'twitter':
+                                $set('max_content_length', 280);
+                                break;
+                            case 'linkedin':
+                                $set('max_content_length', 3000);
+                                break;
+                            case 'instagram':
+                                $set('max_content_length', 2200);
+                                break;
+                        }
+                    }),
+                Forms\Components\Toggle::make('status')
+                    ->label('Active')
+                    ->default(true),
+                Forms\Components\TextInput::make('max_content_length')
+                    ->numeric()
+                    ->disabled()
+                    ->dehydrated(false),
                 Forms\Components\TextInput::make('api_key')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('api_secret')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('api_endpoint')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\Toggle::make('is_active')
+                    ->password()
                     ->required(),
+                Forms\Components\TextInput::make('api_secret')
+                    ->password()
+                    ->required(),
+                Forms\Components\TextInput::make('access_token')
+                    ->password(),
+                Forms\Components\TextInput::make('access_token_secret')
+                    ->password(),
             ]);
     }
 
@@ -46,7 +75,15 @@ class PlatformResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
-                Tables\Columns\IconColumn::make('is_active')
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'twitter' => 'sky',
+                        'instagram' => 'pink',
+                        'linkedin' => 'blue',
+                        default => 'gray',
+                    }),
+                Tables\Columns\IconColumn::make('status')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()
@@ -58,7 +95,14 @@ class PlatformResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active'),
+                Tables\Filters\SelectFilter::make('type')
+                    ->options([
+                        'twitter' => 'Twitter',
+                        'instagram' => 'Instagram',
+                        'linkedin' => 'LinkedIn',
+                    ]),
+                Tables\Filters\TernaryFilter::make('status')
+                    ->label('Active'),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),

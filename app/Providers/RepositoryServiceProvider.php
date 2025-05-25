@@ -11,6 +11,10 @@ use App\Services\ImageService;
 use App\Services\PostService;
 use App\Services\PlatformService;
 use Illuminate\Support\ServiceProvider;
+use App\Repositories\Interfaces\UserRepositoryInterface;
+use App\Repositories\UserRepository;
+use App\Repositories\Interfaces\ActivityLogRepositoryInterface;
+use App\Repositories\ActivityLogRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -18,6 +22,8 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->app->bind(PostRepositoryInterface::class, PostRepository::class);
         $this->app->bind(PlatformRepositoryInterface::class, PlatformRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(ActivityLogRepositoryInterface::class, ActivityLogRepository::class);
 
         // Bind repositories
         $this->app->bind(RepositoryInterface::class, function ($app) {
